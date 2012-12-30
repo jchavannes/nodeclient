@@ -87,6 +87,7 @@
 				CurSocket = Socket.length;
 				Console.log("Connecting to server #"+CurSocket+"...");
 				Socket[CurSocket] = io.connect(server);
+				// Grabbed this snippet from: http://stackoverflow.com/questions/10405070/socket-io-client-respond-to-all-events-with-one-handler
 				var globalEvent = "*";
 				Socket[CurSocket].$emit = function (name) {
 				    if(!this.$events) return false;
