@@ -74,15 +74,18 @@
 					case "emit":
 						this.runEmit(params);
 						break;
+					case "changeserver":
+						this.runChangeServer(params);
+						break;
 					default:
 						Console.log("Unknown command");
 				}
 			}
-			var Socket = [];
+			var Socket = [null];
 			var CurSocket = 0;
 			this.runConnect = function(server) {
 				CurSocket = Socket.length;
-				Console.log("Connecting to server #"+CurSocket+"...", "#eaa");
+				Console.log("Connecting to server #"+CurSocket+"...");
 				Socket[CurSocket] = io.connect(server);
 				var globalEvent = "*";
 				Socket[CurSocket].$emit = function (name) {
@@ -104,7 +107,7 @@
 				Socket[CurSocket].id = CurSocket;
 				Socket[CurSocket].on(globalEvent,function(event) {
 				    var args = Array.prototype.slice.call(arguments, 1);
-				    Console.log("Server Id = "+this.id+"; Event = "+event+"; Arguments = "+JSON.stringify(args), "#aae");
+				    Console.log("Server ("+this.id+"): Event = "+event+"; Arguments = "+JSON.stringify(args), "#aae");
 				});				
 			}
 			this.runEmit = function(params) {
@@ -116,10 +119,16 @@
 				var jsonData = params.replace(/[^ ]+ /, '');
 				try {
 					data = $.parseJSON(jsonData);
-					Console.log("Client Event = "+name+"; Arguments = "+jsonData, "#eaa");
+					Console.log("Client ("+CurSocket+"): Event = "+name+"; Arguments = "+jsonData, "#aea");
 					Socket[CurSocket].emit(name, data);
 				} catch(e) {
 					Console.log("Invalid JSON data.");
+				}
+			}
+			this.runChangeServer = function(params) {
+				if (!isNaN(params) && params > 0 && params < Socket.length) {
+					Console.log("Changing commands to server #"+params);
+					CurSocket = params;
 				}
 			}
 			var scrollToBottom = function() {
