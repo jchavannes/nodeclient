@@ -1,9 +1,6 @@
 html, body {
 	margin: 0px;
 	padding: 0px;
-	background: #888;
-	color: #fff;
-	text-align: center;
 }
 #console, #commandline {
 	position: absolute;
@@ -16,7 +13,6 @@ html, body {
 	padding: 0px;
 	font-family: monospace;
 	font-size: 14px;
-	text-align: left;
 }
 #console {
 	top: 0px;
@@ -28,5 +24,4 @@ html, body {
 #commandline {
 	height: 17px;
 	bottom: 0px;
-	left: 0px;
 }

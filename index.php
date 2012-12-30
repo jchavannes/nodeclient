@@ -23,6 +23,9 @@
 					e.preventDefault();
 					NodeClient.command($('#commandline').val());
 				});
+				$('#console').bind('dblclick', function() {
+					$('#commandline').focus();
+				});
 				$('#commandline').bind('keydown', function(e) {
 					if (CurCommand == null) return;
 					switch (e.keyCode) {
@@ -44,6 +47,9 @@
 								$('#commandline').val(Commands[CurCommand]);	
 							}
 							break;
+						case 27:
+							$('#commandline').val("");
+							break;
 					}
 				}).focus();
 				if (localStorage && localStorage.Commands) {
@@ -54,7 +60,7 @@
 			}
 			var Commands = [];
 			this.yo = function() {
-				console.log(Commands);
+				return Commands;
 			}
 			var CurCommand = null;
 			this.command = function(command) {
@@ -67,7 +73,7 @@
 				Console.log(">> " + command, '#eaa');
 				var run = command.match(/[^ ]+/)[0];
 				var params = command.replace(/[^ ]+ /, '');
-				switch(run) {
+				switch (run) {
 					case "connect":
 						this.runConnect(params);
 						break;
@@ -133,6 +139,8 @@
 				if (!isNaN(params) && params > 0 && params < Socket.length) {
 					Console.log("Changing commands to server #"+params);
 					CurSocket = params;
+				} else {
+					Console.log("Invalid server id.");
 				}
 			}
 			this.runHelp = function() {
@@ -153,9 +161,7 @@
 	</script>
 </head>
 <body>
-	<div class='container'>
-		<div id="console"></div>
-		<form id="command"><input type="text" id="commandline" /></form>
-	</div>
+	<div id="console"></div>
+	<form id="command"><input type="text" id="commandline" /></form>
 </body>
 </html>
