@@ -19,7 +19,6 @@
 				}
 			};
 			this.init = function() {
-				Console.log("Connect to a server by typing: connect &lt;server name&gt;");
 				$('#command').bind('submit', function(e) {
 					e.preventDefault();
 					NodeClient.command($('#commandline').val());
@@ -51,6 +50,7 @@
 					Commands = JSON.parse(localStorage.Commands);
 					CurCommand = Commands.length;
 				}
+				NodeClient.runHelp();
 			}
 			var Commands = [];
 			this.yo = function() {
@@ -76,6 +76,9 @@
 						break;
 					case "changeserver":
 						this.runChangeServer(params);
+						break;
+					case "help":
+						this.runHelp();
 						break;
 					default:
 						Console.log("Unknown command");
@@ -131,6 +134,13 @@
 					Console.log("Changing commands to server #"+params);
 					CurSocket = params;
 				}
+			}
+			this.runHelp = function() {
+				Console.log("Available commands:");
+				Console.log("connect &lt;server name&gt; <i style='color:#ccc;'>connect to a server (eg. connect ws://socketsmash.com:8000)</i>");
+				Console.log("emit &lt;event name&gt; &lt;json data&gt; <i style='color:#ccc;'>sends message to socket server (eg. emit setSession {\"sockId\":0, \"sessionId\":5})</i>");
+				Console.log("changeserver &lt;server id&gt; <i style='color:#ccc;'>switch between servers if connected to more than one</i>");
+				Console.log("help <i style='color:#ccc;'>displays this message</i>");
 			}
 			var scrollToBottom = function() {
 				var con = $('#console');
