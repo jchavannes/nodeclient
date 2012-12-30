@@ -17,7 +17,6 @@ html, body {
 #console {
 	top: 0px;
 	bottom: 17px;
-	resize: none;
 	overflow-y: auto;
 	border-bottom: 1px solid #888;
 }

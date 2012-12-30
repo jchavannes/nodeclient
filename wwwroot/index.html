@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/tr/xhtml1/DTD/xhtml1-transitional.dtd"> 
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"> 
 <head>
-	<title>Node Client</title>
+	<title>Socket.io Client Console</title>
 	<link rel='stylesheet' href='inc/style.css' />
 	
 	<script type='text/javascript' src='inc/socket.io.js'></script>
@@ -115,9 +115,9 @@
 				    return true;
 				};
 				Socket[CurSocket].id = CurSocket;
-				Socket[CurSocket].on(globalEvent,function(event) {
+				Socket[CurSocket].on(globalEvent, function(event) {
 				    var args = Array.prototype.slice.call(arguments, 1);
-				    Console.log("Server ("+this.id+"): Event = "+event+"; Arguments = "+JSON.stringify(args), "#aae");
+				    Console.log("Socket ("+this.id+"): Event = "+event+"; Arguments = "+JSON.stringify(args), "#aea");
 				});				
 			}
 			this.runEmit = function(params) {
@@ -129,7 +129,7 @@
 				var jsonData = params.replace(/[^ ]+ /, '');
 				try {
 					data = $.parseJSON(jsonData);
-					Console.log("Client ("+CurSocket+"): Event = "+name+"; Arguments = "+jsonData, "#aea");
+					Console.log("Socket ("+CurSocket+"): Event = "+name+"; Arguments = "+jsonData, "#aae");
 					Socket[CurSocket].emit(name, data);
 				} catch(e) {
 					Console.log("Invalid JSON data.");
@@ -146,7 +146,7 @@
 			this.runHelp = function() {
 				Console.log("Available commands:");
 				Console.log("connect &lt;server name&gt; <i style='color:#ccc;'>connect to a server (eg. connect ws://socketsmash.com:8000)</i>");
-				Console.log("emit &lt;event name&gt; &lt;json data&gt; <i style='color:#ccc;'>sends message to socket server (eg. emit setSession {\"sockId\":0, \"sessionId\":5})</i>");
+				Console.log("emit &lt;event name&gt; &lt;json data&gt; <i style='color:#ccc;'>sends message to socket server (eg. emit setSession {\"sessionId\":5})</i>");
 				Console.log("changeserver &lt;server id&gt; <i style='color:#ccc;'>switch between servers if connected to more than one</i>");
 				Console.log("help <i style='color:#ccc;'>displays this message</i>");
 			}
