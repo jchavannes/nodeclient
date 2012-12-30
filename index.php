@@ -24,8 +24,46 @@
 					e.preventDefault();
 					NodeClient.command($('#commandline').val());
 				});
+				$('#commandline').bind('keydown', function(e) {
+					if (CurCommand == null) return;
+					switch (e.keyCode) {
+						case 38:
+							CurCommand--;
+							if (CurCommand < 0) {
+								CurCommand = Commands.length;
+								$('#commandline').val("");
+							} else {
+								$('#commandline').val(Commands[CurCommand]);	
+							}
+							break;
+						case 40:
+							CurCommand++;
+							if (CurCommand > Commands.length - 1) {
+								CurCommand = -1;
+								$('#commandline').val("");
+							} else {
+								$('#commandline').val(Commands[CurCommand]);	
+							}
+							break;
+					}
+				}).focus();
+				if (localStorage && localStorage.Commands) {
+					Commands = JSON.parse(localStorage.Commands);
+					CurCommand = Commands.length;
+				}
 			}
+			var Commands = [];
+			this.yo = function() {
+				console.log(Commands);
+			}
+			var CurCommand = null;
 			this.command = function(command) {
+				Commands.push(command);
+				CurCommand = Commands.length;
+				if (localStorage) {
+					localStorage.Commands = JSON.stringify(Commands);
+				}
+				$('#commandline').val("");
 				Console.log(">> " + command, '#eaa');
 				var run = command.match(/[^ ]+/)[0];
 				var params = command.replace(/[^ ]+ /, '');
@@ -40,16 +78,14 @@
 						Console.log("Unknown command");
 				}
 			}
-			var Socket = null;
+			var Socket = [];
+			var CurSocket = 0;
 			this.runConnect = function(server) {
-				Console.log("Connecting to server...", "#eaa");
-				if (Socket != null) {
-					Socket.disconnect();
-					Socket = {};
-				}
-				Socket = io.connect(server);
+				CurSocket = Socket.length;
+				Console.log("Connecting to server #"+CurSocket+"...", "#eaa");
+				Socket[CurSocket] = io.connect(server);
 				var globalEvent = "*";
-				Socket.$emit = function (name) {
+				Socket[CurSocket].$emit = function (name) {
 				    if(!this.$events) return false;
 				    for(var i=0;i<2;++i){
 				        if(i==0 && name==globalEvent) continue;
@@ -65,13 +101,14 @@
 				    }
 				    return true;
 				};
-				Socket.on(globalEvent,function(event){
+				Socket[CurSocket].id = CurSocket;
+				Socket[CurSocket].on(globalEvent,function(event) {
 				    var args = Array.prototype.slice.call(arguments, 1);
-				    Console.log("Server Event = "+event+"; Arguments = "+JSON.stringify(args), "#aae");
+				    Console.log("Server Id = "+this.id+"; Event = "+event+"; Arguments = "+JSON.stringify(args), "#aae");
 				});				
 			}
 			this.runEmit = function(params) {
-				if (Socket == null) {
+				if (Socket[CurSocket] == null) {
 					Console.log("You are not connected to a server.");
 					return;
 				}
@@ -80,7 +117,7 @@
 				try {
 					data = $.parseJSON(jsonData);
 					Console.log("Client Event = "+name+"; Arguments = "+jsonData, "#eaa");
-					Socket.emit(name, data);
+					Socket[CurSocket].emit(name, data);
 				} catch(e) {
 					Console.log("Invalid JSON data.");
 				}
@@ -96,11 +133,9 @@
 	</script>
 </head>
 <body>
-	
 	<div class='container'>
 		<div id="console"></div>
 		<form id="command"><input type="text" id="commandline" /></form>
 	</div>
-	
 </body>
 </html>

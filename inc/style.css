@@ -4,9 +4,9 @@ html, body {
 	background: #888;
 	color: #fff;
 	text-align: center;
-	height: 100%;
 }
 #console, #commandline {
+	position: absolute;
 	width: 100%;
 	background: #555;
 	color: #fff;
@@ -19,8 +19,6 @@ html, body {
 	text-align: left;
 }
 #console {
-	width: 100;
-	position: absolute;
 	top: 0px;
 	bottom: 17px;
 	resize: none;
@@ -28,9 +26,7 @@ html, body {
 	border-bottom: 1px solid #888;
 }
 #commandline {
-	position: absolute;
 	height: 17px;
 	bottom: 0px;
-	width: 100;
 	left: 0px;
 }
