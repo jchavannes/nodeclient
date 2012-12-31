@@ -64,6 +64,7 @@
 			}
 			var CurCommand = null;
 			this.command = function(command) {
+				command = command.replace("<script", "");
 				Commands.push(command);
 				CurCommand = Commands.length;
 				if (localStorage) {
@@ -73,6 +74,9 @@
 				Console.log(">> " + command, '#eaa');
 				var run = command.match(/[^ ]+/)[0];
 				var params = command.replace(/[^ ]+ /, '');
+				if (tutorialActive && !this.tutorialCommand(run, params)) {
+					return;
+				}
 				switch (run) {
 					case "connect":
 						this.runConnect(params);
@@ -83,6 +87,9 @@
 					case "changeserver":
 						this.runChangeServer(params);
 						break;
+					case "tutorial":
+						this.runTutorial();
+						break;
 					case "help":
 						this.runHelp();
 						break;
@@ -90,11 +97,36 @@
 						Console.log("Unknown command");
 				}
 			}
+			this.tutorialCommand = function(run, params) {
+				if (run+" "+params == tutorialCommands[curTutorial].command || run == "skip") {
+					curTutorial++;
+					if (curTutorial == tutorialCommands.length) {
+						curTutorial = null;
+						tutorialActive = false;
+						setTimeout(function() {
+							Console.log("<br/>Congratulations, you've completed the tutorial!","#eea");
+							Console.log("Try sending messages by creating a user on another computer or browser.<br/>","#eea");
+						}, 500);
+					} else {
+						setTimeout(function() {
+							NodeClient.getTutorialMessage(curTutorial);	
+						}, 500);
+					}
+				}
+				if (run == "stop") {
+					tutorialActive = false;
+					Console.log("Tutorial stopped.<br/>","#eea");
+					return false;
+				} else if (run == "skip") {
+					return false;
+				}
+				return true;
+			}
 			var Socket = [null];
 			var CurSocket = 0;
 			this.runConnect = function(server) {
 				CurSocket = Socket.length;
-				Console.log("Connecting to server #"+CurSocket+"...");
+				Console.log("Connecting using socket #"+CurSocket+"...");
 				Socket[CurSocket] = io.connect(server);
 				// Grabbed this snippet from: http://stackoverflow.com/questions/10405070/socket-io-client-respond-to-all-events-with-one-handler
 				var globalEvent = "*";
@@ -127,8 +159,11 @@
 				}
 				var name = params.match(/[^ ]+/)[0];
 				var jsonData = params.replace(/[^ ]+ /, '');
+				if (params == name) {
+					jsonData = "{}";
+				}
 				try {
-					data = $.parseJSON(jsonData);
+					data = JSON.parse(jsonData);
 					Console.log("Socket ("+CurSocket+"): Event = "+name+"; Arguments = "+jsonData, "#aae");
 					Socket[CurSocket].emit(name, data);
 				} catch(e) {
@@ -143,11 +178,47 @@
 					Console.log("Invalid server id.");
 				}
 			}
+			var tutorialActive = false;
+			var curTutorial;
+			this.runTutorial = function() {
+				Console.log("Starting tutorial. Use can use 'skip' or 'stop' to exit the tutorial.","#eea");
+				curTutorial = 0;
+				this.getTutorialMessage(curTutorial);
+				tutorialActive = true;
+			}
+			var tutorialCommands = [
+				{
+					message: "Use the connect command to connect to the test server:",
+					command: "connect ws://socket.noobsonly.com:9000"
+				}, {
+					message: "This server requires that you set your sessionId before becoming a user.  Use setSession to generate a session id:",
+					command: "emit setSession"
+				}, {
+					message: "As you can see, you use the emit command to send events to the server:",
+					command: "emit getUsers"
+				}, {
+					message: "Some events accept data inputs in JSON format.  To add your name this server has an event setName:",
+					command: "emit setName {\"name\":\"John\"}"
+				}, {
+					message: "Check getUsers again to see if your name was set:",
+					command: "emit getUsers"
+				}, {
+					message: "You can send messages to other users using sendMessage:",
+					command: "emit sendMessage {\"message\":\"hey\"}"
+				}
+			];
+			this.getTutorialMessage = function(command) {
+				if (typeof tutorialCommands[command] != 'undefined') {
+					Console.log("<br/>"+tutorialCommands[command].message,"#eea");
+					Console.log("<i style='color:#ccc;'>"+tutorialCommands[command].command+"</i><br/>");
+				}
+			}
 			this.runHelp = function() {
 				Console.log("Available commands:");
-				Console.log("connect &lt;server name&gt; <i style='color:#ccc;'>connect to a server (eg. connect ws://socketsmash.com:8000)</i>");
+				Console.log("connect &lt;server name&gt; <i style='color:#ccc;'>connect to a server (eg. connect ws://socket.noobsonly.com:9000)</i>");
 				Console.log("emit &lt;event name&gt; &lt;json data&gt; <i style='color:#ccc;'>sends message to socket server (eg. emit setSession {\"sessionId\":5})</i>");
 				Console.log("changeserver &lt;server id&gt; <i style='color:#ccc;'>switch between servers if connected to more than one</i>");
+				Console.log("tutorial <i style='color:#ccc;'>runs a brief tutorial</i>");
 				Console.log("help <i style='color:#ccc;'>displays this message</i>");
 			}
 			var scrollToBottom = function() {
