@@ -1,9 +1,10 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/tr/xhtml1/DTD/xhtml1-transitional.dtd"> 
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"> 
 <head>
-	<title>Socket.io Client Console</title>
+	<title>Web Socket Client Console</title>
+	<meta name='author' content='Jason Chavannes <jason.chavannes@gmail.com>' />
+
 	<link rel='stylesheet' href='inc/style.css' />
-	
 	<script type='text/javascript' src='inc/socket.io.js'></script>
 	<script type='text/javascript' src='inc/jquery.min.js'></script>
 	
@@ -90,6 +91,9 @@
 					case "tutorial":
 						this.runTutorial();
 						break;
+					case "info":
+						this.runInfo();
+						break;
 					case "help":
 						this.runHelp();
 						break;
@@ -104,14 +108,19 @@
 						curTutorial = null;
 						tutorialActive = false;
 						setTimeout(function() {
-							Console.log("<br/>Congratulations, you've completed the tutorial!","#eea");
-							Console.log("Try sending messages by creating a user on another computer or browser.<br/>","#eea");
+							Console.log("<br/>Congratulations, you've completed the tutorial!", "#eea");
+							Console.log("Try sending messages by creating a user on another computer or browser.<br/>", "#eea");
 						}, 500);
 					} else {
 						setTimeout(function() {
 							NodeClient.getTutorialMessage(curTutorial);	
 						}, 500);
 					}
+				}
+				if (run == "tutorial") {
+					Console.log("Use can use 'skip' or 'stop' to exit the tutorial.", "#eea");
+					NodeClient.getTutorialMessage(curTutorial);
+					return false;
 				}
 				if (run == "stop") {
 					tutorialActive = false;
@@ -213,12 +222,20 @@
 					Console.log("<i style='color:#ccc;'>"+tutorialCommands[command].command+"</i><br/>");
 				}
 			}
+			this.runInfo = function() {
+				Console.log("== The Socket.io Client Console ==");
+				Console.log("An easy way to debug your web sockets!")
+				Console.log("View project on github: <a href='https://github.com/noobsonly/nodeclient' target='_blank'>here</a>.");
+				Console.log("View test server source: <a href='noobnode.js' target='_blank'>here</a>.");
+				Console.log("Produced by <a href='http://noobsonly.com/projects' target='_blank'>noobsonly</a>.");
+			}
 			this.runHelp = function() {
 				Console.log("Available commands:");
 				Console.log("connect &lt;server name&gt; <i style='color:#ccc;'>connect to a server (eg. connect ws://socket.noobsonly.com:9000)</i>");
 				Console.log("emit &lt;event name&gt; &lt;json data&gt; <i style='color:#ccc;'>sends message to socket server (eg. emit setSession {\"sessionId\":5})</i>");
 				Console.log("changeserver &lt;server id&gt; <i style='color:#ccc;'>switch between servers if connected to more than one</i>");
 				Console.log("tutorial <i style='color:#ccc;'>runs a brief tutorial</i>");
+				Console.log("info <i style='color:#ccc;'>displays the information</i>");
 				Console.log("help <i style='color:#ccc;'>displays this message</i>");
 			}
 			var scrollToBottom = function() {

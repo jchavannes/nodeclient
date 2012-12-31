@@ -52,6 +52,10 @@ io.sockets.on('connection', function (socket) {
         }
 
         sockets[sockId].socket.on('setName', function(data) {
+            if (typeof data.name != "string") {
+                sockets[sockId].socket.emit('serverMessage', {message:"Invalid name."});
+                return;
+            }
             var name = data.name.replace(/[^a-z0-9 ]+/gi, "");
             users[userId].name = name;
             sockets[sockId].socket.emit('serverMessage', {message:"Changed user name to "+name+"."});
@@ -74,6 +78,10 @@ io.sockets.on('connection', function (socket) {
     });
 
     sockets[sockId].socket.on('sendMessage', function(data) {
+        if (typeof data.message != "string") {
+            sockets[sockId].socket.emit('serverMessage', {message:"Invalid message."});
+            return;
+        }
         var message = data.message.replace(/[^a-z0-9 !?.,():;&^%$#@\[\]\{\}\|\/\\\+\-\*"']+/gi, "");
         for (var i = 0; i < users.length; i++) {
             if (users[i].active) {
