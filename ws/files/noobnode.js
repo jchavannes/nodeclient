@@ -2,12 +2,14 @@
  * Date: 12/30/2012 */
 
 // Load dependencies and create data stores
-var io = require('socket.io').listen(9000);
+var io = require('socket.io').listen(80);
 var sockets = [];
 var users = [];
 
 // New connection
 io.sockets.on('connection', function (socket) {
+
+    console.log('new connection');
 
     // Add connection to socket store
     var sockId = sockets.length;
@@ -17,6 +19,8 @@ io.sockets.on('connection', function (socket) {
 
     // Get session key from client
     sockets[sockId].socket.on('setSession', function(data) {
+
+        console.log('received setSession');
 
         if (userId !== false) {
             sockets[sockId].socket.emit('serverMessage', {message:"Session already set."});
@@ -62,6 +66,7 @@ io.sockets.on('connection', function (socket) {
         });
 
         sockets[sockId].socket.on('disconnect', function() {
+            console.log("disconnect");
             users[userId].active = false;
         });
 

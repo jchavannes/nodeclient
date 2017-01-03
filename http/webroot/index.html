@@ -4,10 +4,15 @@
 	<title>Web Socket Client Console</title>
 	<meta name='author' content='Jason Chavannes <jason.chavannes@gmail.com>' />
 
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>
 	<link rel='stylesheet' href='inc/style.css' />
-	<script type='text/javascript' src='inc/socket.io.js'></script>
-	<script type='text/javascript' src='inc/jquery.min.js'></script>
-	
+	<script type="text/javascript">
+        var socketUrl = ('https:' == document.location.protocol) ? '' : 'http://' + document.location.hostname + ':8242';
+        socketUrl += document.location.pathname;
+        var script = "<script type='text/javascript' src='" + socketUrl + "socket.io/socket.io.js' type='text/javascript'\></script\>";
+			document.write(script);
+    </script>
+
 	<script type='text/javascript'>
 		var NodeClient = new (function() {
 			var Console = {
@@ -134,12 +139,42 @@
 			var Socket = [null];
 			var CurSocket = 0;
 			this.runConnect = function(server) {
-				CurSocket = Socket.length;
-				Console.log("Connecting using socket #"+CurSocket+"...");
-				Socket[CurSocket] = io.connect(server);
-				// Grabbed this snippet from: http://stackoverflow.com/questions/10405070/socket-io-client-respond-to-all-events-with-one-handler
+                var parser = document.createElement('a');
+                parser.href = server;
+
+                CurSocket = Socket.length;
+				Console.log("Connecting using socket #" + CurSocket + "...");
+
+                if (parser.protocol == "wss:") {
+                    var options = {
+                        "transports": ["websocket"]
+                    };
+                    if (parser.pathname.length > 0) {
+                        options.path = parser.pathname + "socket.io";
+                    }
+                    console.log(options);
+                    //options.secure = true;
+                    Socket[CurSocket] = io.connect(parser.hostname, options);
+                } else {
+                    Socket[CurSocket] = io.connect(server);
+				}
+
+                Socket[CurSocket].id = CurSocket;
+
+                var onevent = Socket[CurSocket].onevent;
+                Socket[CurSocket].onevent = function (packet) {
+                    var args = packet.data || [];
+                    onevent.call (this, packet);    // original call
+                    packet.data = ["*"].concat(args);
+                    onevent.call(this, packet);      // additional call to catch-all
+                };
+                Socket[CurSocket].on("*",function(event,data) {
+                    Console.log("Socket ("+this.id+"): Event = "+event+"; Arguments = "+JSON.stringify(data), "#aea");
+                });
+
+                // Grabbed this snippet from: http://stackoverflow.com/questions/10405070/socket-io-client-respond-to-all-events-with-one-handler
 				var globalEvent = "*";
-				Socket[CurSocket].$emit = function (name) {
+				/*Socket[CurSocket].$emit = function (name) {
 				    if(!this.$events) return false;
 				    for(var i=0;i<2;++i){
 				        if(i==0 && name==globalEvent) continue;
@@ -154,12 +189,12 @@
 				        } else return false;
 				    }
 				    return true;
-				};
-				Socket[CurSocket].id = CurSocket;
-				Socket[CurSocket].on(globalEvent, function(event) {
+				};*/
+				/*Socket[CurSocket].on(globalEvent, function(event) {
+				    console.log(event);
 				    var args = Array.prototype.slice.call(arguments, 1);
 				    Console.log("Socket ("+this.id+"): Event = "+event+"; Arguments = "+JSON.stringify(args), "#aea");
-				});				
+				});*/
 			}
 			this.runEmit = function(params) {
 				if (Socket[CurSocket] == null) {
@@ -174,6 +209,7 @@
 				try {
 					data = JSON.parse(jsonData);
 					Console.log("Socket ("+CurSocket+"): Event = "+name+"; Arguments = "+jsonData, "#aae");
+					console.log(Socket);
 					Socket[CurSocket].emit(name, data);
 				} catch(e) {
 					Console.log("Invalid JSON data.");
@@ -195,10 +231,12 @@
 				this.getTutorialMessage(curTutorial);
 				tutorialActive = true;
 			}
+            var testServer = ('https:' == document.location.protocol) ? 'wss://' + document.location.hostname : 'ws://' + document.location.hostname + ':8242';
+            testServer += document.location.pathname;
 			var tutorialCommands = [
 				{
 					message: "Use the connect command to connect to the test server:",
-					command: "connect ws://socket.noobsonly.com:9000"
+					command: "connect " + testServer
 				}, {
 					message: "This server requires that you set your sessionId before becoming a user.  Use setSession to generate a session id:",
 					command: "emit setSession"
