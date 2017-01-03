@@ -225,8 +225,8 @@ var NodeClient = new (function() {
     this.runInfo = function() {
         Console.log("== The Socket.io Client Console ==");
         Console.log("An easy way to debug your web sockets!")
-        Console.log("View project on github: <a href='https://github.com/noobsonly/nodeclient' target='_blank'>here</a>.");
-        Console.log("View test server source: <a href='noobnode.js' target='_blank'>here</a>.");
+        Console.log("View project on github: <a href='https://github.com/jchavannes/nodeclient' target='_blank'>https://github.com/jchavannes/nodeclient</a>");
+        Console.log("View test server source: <a href='https://github.com/jchavannes/nodeclient/blob/master/ws/files/noobnode.js' target='_blank'>noobnode.js</a>");
         Console.log("Produced by <a href='http://noobsonly.com/projects' target='_blank'>noobsonly</a>.");
     };
     this.runHelp = function() {
