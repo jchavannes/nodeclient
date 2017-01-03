@@ -170,7 +170,7 @@ var NodeClient = new (function() {
             jsonData = "{}";
         }
         try {
-            data = JSON.parse(jsonData);
+            var data = JSON.parse(jsonData);
             Console.log("Socket ("+CurSocket+"): Event = "+name+"; Arguments = "+jsonData, "#aae");
             Socket[CurSocket].emit(name, data);
         } catch(e) {

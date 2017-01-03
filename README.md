@@ -12,4 +12,5 @@ $ cd /var/www/ws/files/
 $ npm install socket.io@1.3.7
 $ exit
 ws/server.sh
+http/server.sh
 ```
