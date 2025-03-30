@@ -1,3 +1,4 @@
 .project
 .settings
 ws/files/node_modules/
+ws/files/package-lock.json

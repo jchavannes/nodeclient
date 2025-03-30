@@ -1,0 +1,32 @@
+services:
+  prod:
+    image: nodeclient-prod
+    platform: linux/amd64
+    build:
+      dockerfile: http/Dockerfile
+      target: ${DOCKER_TARGET:-production}
+    profiles:
+      - prod
+  dev:
+    image: nodeclient-dev
+    container_name: nodeclient-dev
+    ports:
+      - "8081:80"
+    volumes:
+      - ./http/webroot/:/var/www/html/
+    build:
+      dockerfile: http/Dockerfile
+      target: ${DOCKER_TARGET:-development}
+    profiles:
+      - dev
+  ws:
+    image: nodeclient-ws-dev
+    container_name: nodeclient-ws
+    ports:
+      - "8242:80"
+    volumes:
+      - ./ws/files/:/var/www/ws/
+    build:
+      dockerfile: ws/Dockerfile
+    profiles:
+      - dev
