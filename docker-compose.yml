@@ -31,7 +31,7 @@ services:
     image: nodeclient-ws-dev
     container_name: nodeclient-ws-dev
     ports:
-      - "8242:80"
+      - "8242:8242"
     volumes:
       - ./ws/files/:/var/www/ws/
     build:

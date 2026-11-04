@@ -3,6 +3,11 @@ socketUrl += document.location.pathname;
 var script = "<script type='text/javascript' src='" + socketUrl + "socket.io/socket.io.js' type='text/javascript'\></script\>";
 document.write(script);
 var NodeClient = new (function() {
+    var escapeHtml = function(text) {
+        return String(text).replace(/[&<>"']/g, function(c) {
+            return '&#' + c.charCodeAt(0) + ';';
+        });
+    };
     var Console = {
         log: function(text, color) {
             if (typeof color == "string") {
@@ -58,14 +63,13 @@ var NodeClient = new (function() {
     };
     var CurCommand = null;
     this.command = function(command) {
-        command = command.replace("<script", "");
         Commands.push(command);
         CurCommand = Commands.length;
         if (localStorage) {
             localStorage.Commands = JSON.stringify(Commands);
         }
         $('#commandline').val("");
-        Console.log(">> " + command, '#eaa');
+        Console.log(">> " + escapeHtml(command), '#eaa');
         var run = command.match(/[^ ]+/)[0];
         var params = command.replace(/[^ ]+ /, '');
         if (tutorialActive && !this.tutorialCommand(run, params)) {
@@ -133,30 +137,27 @@ var NodeClient = new (function() {
         CurSocket = Socket.length;
         Console.log("Connecting using socket #" + CurSocket + "...");
 
-        if (parser.protocol == "wss:") {
-            var options = {
-                "transports": ["websocket"]
-            };
-            if (parser.pathname.length > 0) {
-                options.path = parser.pathname + "socket.io";
+        if (parser.protocol == "ws:" || parser.protocol == "wss:") {
+            // Accept both wss://host/ and wss://host/socket.io/
+            var path = parser.pathname.replace(/\/$/, '');
+            if (!/socket\.io$/.test(path)) {
+                path += "/socket.io";
             }
-            //options.secure = true;
-            Socket[CurSocket] = io.connect(parser.hostname, options);
+            var options = {
+                "transports": ["websocket"],
+                "path": path
+            };
+            Socket[CurSocket] = io.connect(parser.protocol + "//" + parser.host + parser.search, options);
         } else {
             Socket[CurSocket] = io.connect(server);
         }
 
-        Socket[CurSocket].id = CurSocket;
-
-        var onevent = Socket[CurSocket].onevent;
-        Socket[CurSocket].onevent = function (packet) {
-            var args = packet.data || [];
-            onevent.call (this, packet);    // original call
-            packet.data = ["*"].concat(args);
-            onevent.call(this, packet);      // additional call to catch-all
-        };
-        Socket[CurSocket].on("*",function(event,data) {
-            Console.log("Socket ("+this.id+"): Event = "+event+"; Arguments = "+JSON.stringify(data), "#aea");
+        var socketId = CurSocket;
+        Socket[CurSocket].onAny(function(event, data) {
+            Console.log("Socket ("+socketId+"): Event = "+escapeHtml(event)+"; Arguments = "+escapeHtml(JSON.stringify(data)), "#aea");
+        });
+        Socket[CurSocket].on("connect_error", function(err) {
+            Console.log("Socket ("+socketId+"): Connection error: "+escapeHtml(err.message), "#eaa");
         });
     };
     this.runEmit = function(params) {
@@ -171,7 +172,7 @@ var NodeClient = new (function() {
         }
         try {
             var data = JSON.parse(jsonData);
-            Console.log("Socket ("+CurSocket+"): Event = "+name+"; Arguments = "+jsonData, "#aae");
+            Console.log("Socket ("+CurSocket+"): Event = "+escapeHtml(name)+"; Arguments = "+escapeHtml(jsonData), "#aae");
             Socket[CurSocket].emit(name, data);
         } catch(e) {
             Console.log("Invalid JSON data.");
@@ -231,8 +232,8 @@ var NodeClient = new (function() {
     };
     this.runHelp = function() {
         Console.log("Available commands:");
-        Console.log("connect &lt;server name&gt; <i style='color:#ccc;'>connect to a server (eg. connect ws://socket.noobsonly.com:9000)</i>");
-        Console.log("emit &lt;event name&gt; &lt;json data&gt; <i style='color:#ccc;'>sends message to socket server (eg. emit setSession {\"sessionId\":5})</i>");
+        Console.log("connect &lt;server url&gt; <i style='color:#ccc;'>connect to a server (eg. connect " + testServer + ")</i>");
+        Console.log("emit &lt;event name&gt; &lt;json data&gt; <i style='color:#ccc;'>sends message to socket server (eg. emit setSession {\"sessionId\":\"abc123\"})</i>");
         Console.log("changeserver &lt;server id&gt; <i style='color:#ccc;'>switch between servers if connected to more than one</i>");
         Console.log("tutorial <i style='color:#ccc;'>runs a brief tutorial</i>");
         Console.log("info <i style='color:#ccc;'>displays the information</i>");

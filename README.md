@@ -11,12 +11,18 @@ docker-compose --profile dev up -d
 
 # Stop dev
 docker-compose --profile dev down
+
+# Run tests (needs Node 20+)
+node --test
 ```
 
 ## Build
 ```sh
 VERSION="0.3"
 REGISTRY="host.docker.internal:5000"
+
+# Install ws dependencies (copied into the ws image)
+(cd ws/files && npm ci)
 
 # Build image
 docker-compose build prod
@@ -50,16 +56,5 @@ docker exec nodeclient-http php -v
 #### Run build
 ```sh
 docker run -d --name nodeclient-http --restart unless-stopped -p 8241:80 host.docker.internal:5000/nodeclient-http:latest
-docker run -d --name nodeclient-ws   --restart unless-stopped -p 8242:80 host.docker.internal:5000/nodeclient-ws:latest
-```
-
-#### Old Setup
-
-```bash
-ws/server.sh -i
-$ cd /var/www/ws/files/
-$ npm install socket.io@1.3.7
-$ exit
-ws/server.sh
-http/server.sh
+docker run -d --name nodeclient-ws   --restart unless-stopped -p 8242:8242 host.docker.internal:5000/nodeclient-ws:latest
 ```

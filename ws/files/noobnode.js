@@ -1,112 +1,140 @@
 /* Author: Jason Chavannes <jason.chavannes@gmail.com>
  * Date: 12/30/2012 */
 
-// Load dependencies and create data stores
-var io = require('socket.io').listen(80);
-var sockets = [];
-var users = [];
+const crypto = require('crypto');
+const { Server } = require('socket.io');
+
+const PORT = parseInt(process.env.PORT, 10) || 8242;
+const MAX_USERS = 1000;
+
+const io = new Server(PORT, { maxHttpBufferSize: 10 * 1024 });
+
+// sessionId -> {name, active, socket}
+const users = new Map();
+
+function serverMessage(socket, message) {
+    socket.emit('serverMessage', { message: message });
+}
+
+function isValidSessionId(id) {
+    return typeof id === 'string' && /^[A-Za-z0-9]{1,64}$/.test(id);
+}
 
 // New connection
-io.sockets.on('connection', function (socket) {
+io.on('connection', function (socket) {
 
     console.log('new connection');
 
-    // Add connection to socket store
-    var sockId = sockets.length;
-    var userId = false;
-    sockets[sockId] = {socket: socket};
-    sockets[sockId].socket.emit('serverMessage', {message:"Connected, welcome to Noob Node!"});
+    let user = null;
+    serverMessage(socket, "Connected, welcome to Noob Node!");
 
     // Get session key from client
-    sockets[sockId].socket.on('setSession', function(data) {
+    socket.on('setSession', function (data) {
 
         console.log('received setSession');
 
-        if (userId !== false) {
-            sockets[sockId].socket.emit('serverMessage', {message:"Session already set."});
+        if (user !== null) {
+            serverMessage(socket, "Session already set.");
             return;
         }
 
-        if (typeof data.sessionId == 'undefined') {
+        data = Object(data);
+        if (typeof data.sessionId === 'undefined') {
             data.sessionId = randomString(12);
-            sockets[sockId].socket.emit('serverMessage', {message:"Generated new sessionId: "+data.sessionId});
-
+            serverMessage(socket, "Generated new sessionId: " + data.sessionId);
         }
-        sockets[sockId].sessionId = data.sessionId;
+        if (!isValidSessionId(data.sessionId)) {
+            serverMessage(socket, "Invalid sessionId.");
+            return;
+        }
 
         // Check if user exists already
-        for(var i = 0; typeof users[i] != 'undefined'; i++) {
-            if(sockets[users[i].sockId].sessionId == data.sessionId) {
-                sockets[sockId].socket.emit('serverMessage', {message:"Existing session id, welcome back."});
-                userId = i;
-                users[i].sockId = sockId;
-                users[i].active = true;
+        user = users.get(data.sessionId);
+        if (user) {
+            serverMessage(socket, "Existing session id, welcome back.");
+            if (user.socket && user.socket !== socket) {
+                user.socket.disconnect(true);
             }
-        }
-
-        // Create new user
-        if(userId === false) {
-            sockets[sockId].socket.emit('serverMessage', {message:"New Session Id, creating new user."});
-            userId = users.length;
-            users[userId] = {
-                name: null,
-                sockId: sockId,
-                active: true
+        } else {
+            serverMessage(socket, "New Session Id, creating new user.");
+            if (users.size >= MAX_USERS) {
+                for (const [id, u] of users) {
+                    if (!u.active) {
+                        users.delete(id);
+                    }
+                }
             }
-        }
-
-        sockets[sockId].socket.on('setName', function(data) {
-            if (typeof data.name != "string") {
-                sockets[sockId].socket.emit('serverMessage', {message:"Invalid name."});
+            if (users.size >= MAX_USERS) {
+                serverMessage(socket, "Server full.");
+                user = null;
                 return;
             }
-            var name = data.name.replace(/[^a-z0-9 ]+/gi, "");
-            users[userId].name = name;
-            sockets[sockId].socket.emit('serverMessage', {message:"Changed user name to "+name+"."});
-        });
-
-        sockets[sockId].socket.on('disconnect', function() {
-            console.log("disconnect");
-            users[userId].active = false;
-        });
-
-    });
-
-    sockets[sockId].socket.on('getUsers', function() {
-        var sendUsers = [];
-        for (var i = 0; i < users.length; i++) {
-            if (users[i].active) {
-                sendUsers.push(users[i]);
-            }
+            user = { name: null, active: false, socket: null };
+            users.set(data.sessionId, user);
         }
-        sockets[sockId].socket.emit('sendUsers', {users:sendUsers});
+        user.active = true;
+        user.socket = socket;
     });
 
-    sockets[sockId].socket.on('sendMessage', function(data) {
-        if (typeof data.message != "string") {
-            sockets[sockId].socket.emit('serverMessage', {message:"Invalid message."});
+    socket.on('setName', function (data) {
+        if (user === null) {
+            serverMessage(socket, "Set a session first.");
             return;
         }
-        var message = data.message.replace(/[^a-z0-9 !?.,():;&^%$#@\[\]\{\}\|\/\\\+\-\*"']+/gi, "");
-        for (var i = 0; i < users.length; i++) {
-            if (users[i].active) {
-                sockets[users[i].sockId].socket.emit('getMessage', {name:users[userId].name, message:message});
+        data = Object(data);
+        if (typeof data.name !== "string") {
+            serverMessage(socket, "Invalid name.");
+            return;
+        }
+        const name = data.name.replace(/[^a-z0-9 ]+/gi, "").slice(0, 32);
+        user.name = name;
+        serverMessage(socket, "Changed user name to " + name + ".");
+    });
+
+    socket.on('getUsers', function () {
+        const sendUsers = [];
+        for (const u of users.values()) {
+            if (u.active) {
+                sendUsers.push({ name: u.name, active: u.active });
             }
+        }
+        socket.emit('sendUsers', { users: sendUsers });
+    });
+
+    socket.on('sendMessage', function (data) {
+        if (user === null) {
+            serverMessage(socket, "Set a session first.");
+            return;
+        }
+        data = Object(data);
+        if (typeof data.message !== "string") {
+            serverMessage(socket, "Invalid message.");
+            return;
+        }
+        const message = data.message.replace(/[^a-z0-9 !?.,():;&^%$#@\[\]\{\}\|\/\\\+\-\*"']+/gi, "").slice(0, 1000);
+        for (const u of users.values()) {
+            if (u.active) {
+                u.socket.emit('getMessage', { name: user.name, message: message });
+            }
+        }
+    });
+
+    socket.on('disconnect', function () {
+        console.log("disconnect");
+        if (user !== null && user.socket === socket) {
+            user.active = false;
+            user.socket = null;
         }
     });
 
 });
 
 function randomString(length) {
-    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split('');
-
-    if (! length) {
-        length = Math.floor(Math.random() * chars.length);
-    }
-
-    var str = '';
-    for (var i = 0; i < length; i++) {
-        str += chars[Math.floor(Math.random() * chars.length)];
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    const bytes = crypto.randomBytes(length);
+    let str = '';
+    for (let i = 0; i < length; i++) {
+        str += chars[bytes[i] % chars.length];
     }
     return str;
 }
