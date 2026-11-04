@@ -25,7 +25,7 @@ REGISTRY="host.docker.internal:5000"
 (cd ws/files && npm ci)
 
 # Build image
-docker-compose build prod
+docker-compose --profile prod build --pull
 
 # Tag images
 NAME_HTTP="${REGISTRY}/nodeclient-http"
