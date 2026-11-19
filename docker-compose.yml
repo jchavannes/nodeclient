@@ -21,7 +21,7 @@ services:
     ports:
       - "8081:80"
     volumes:
-      - ./http/webroot/:/var/www/html/
+      - ./http/webroot/:/usr/local/apache2/htdocs/
     build:
       dockerfile: http/Dockerfile
       target: ${DOCKER_TARGET:-development}

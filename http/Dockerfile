@@ -1,12 +1,8 @@
 # Production
-FROM amd64/php:8.3.36-apache AS production
-RUN a2enmod rewrite
-COPY http/files/apache.conf /etc/apache2/sites-available/000-default.conf
-COPY http/files/php.ini /usr/local/etc/php/conf.d/nodeclient.ini
-COPY http/webroot/ /var/www/html/
+FROM amd64/httpd:2.4.69-alpine AS production
+RUN echo "ServerTokens Prod" >> /usr/local/apache2/conf/httpd.conf
+COPY http/webroot/ /usr/local/apache2/htdocs/
 
-# Development
-FROM php:8.3.36-apache AS development
-RUN a2enmod rewrite
-COPY http/files/apache.conf /etc/apache2/sites-available/000-default.conf
-COPY http/files/php.ini /usr/local/etc/php/conf.d/nodeclient.ini
+# Development (webroot is mounted by docker-compose)
+FROM httpd:2.4.69-alpine AS development
+RUN echo "ServerTokens Prod" >> /usr/local/apache2/conf/httpd.conf

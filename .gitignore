@@ -1,3 +1,4 @@
 .project
 .settings
 ws/files/node_modules/
+.idea/
